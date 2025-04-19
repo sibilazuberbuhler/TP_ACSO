@@ -1,0 +1,53 @@
+Sibila Zuberbuhler szuberbuhler@udesa.edu.ar
+phase_1
+El código de phase_1 carga una cadena fija en una dirección de memoria y despues llama a la función strings_not_equal comparando esa cadena con lo ingresado por el usuario.
+use x/s 0x4c9a58 para ver el contenido de la direccion de memoria. El conetnido en esa direccion es el input para pasar la phase_1. 
+
+phase_2
+La bomba para esta fase esperaba dos numeros separados por un espacio.  
+Usa strtoq para pasar la cadena del input a enteros y guardarlos en dos registros.  
+El primer numero se guarda en rbx y el segundo en rax, que despues se copia a edx. 
+Con estos dos números se calcula edi, lea	edi, [rbx + rax - 32]
+llama a la funcion misterio
+401e9c: e8 6a ff ff ff               	call	0x401e0b <misterio>
+Misterio usa edi y edx. En misterio se tienen que cumplir dos condiciones para que no explote la bomba. Edi tiene que tener 11 bits en 1, y el XOR entre ambos tiene que ser negativo.
+Entonces edi = 2047 numero que se que tiene 11 bits en 1 --> 2047 = rbx + rax - 32 --> rbx + rax = 2079. De ahi uso rbx = 2082 rax = -3. --> edi = 2082 + (-3) - 32 = 2047 
+cantidad de bits en 1 de edi = 11  y rbx ^ rax = negativo, por eso elijo rax = -3
+Verifique de a poco con gdb que se cumplan las condiciones y comparando valores usando prints para ver que se va a ejecutar y que no explote la bomba. 
+
+phase_3
+Veo que inputs nececita la fase 3. Tengo que ingresar una palabra y un numero. 
+pongo un breakpoint justo después de llamar a cuenta. Despues, con layout regs en GDB estaba viendo el lo que hay en eax que es el valor que cuenta devuelve
+Probé con una palabra de palabras.txt y pongo el segundo parámetro a 0 para forzar la llamada. 
+Cada vez que lo ejecutaba, miro en EAX y veía un número. Cuando EAX es menor a 9999, que es una condicion de la fase, se que ese era un posible valor para el segundo input 
+Despues con los breakpoints para que no explote la bomba si no eran los inputs correctos, vuelvo a correr la misma palabra y ese numero como segundo input. 
+
+phase_4 
+Empeze por fijarme a que apunta la direccion de memoria 0x4c70ec, 0x4c70ec: "%d %d" entonces se que va a esperar que ingrese dos enteros en decimal, si le paso algo distinto explota la bomba.
+En 0x4cde60 esta la tabla con 16 entreadas que usa el bucle en la phase_4. 
+Despues de cargar la direccion de esa tabla, empieza el bucle en 
+0x40213f <phase_4+0x49>  lea    rsi,[rip+0xc4cf] 
+El bucle hace lo siguiente. 
+add   edx,1            ; edx++ (contador de pasos)
+mov   eax,[rsi+4*rax]  ; carga array[x]
+cmp   eax,15
+jne   bucle            ; repite hasta que array[x]==15
+Para leer el arreglo hago x/16dw 0x4cde60
+0x4cde60 <array.0>:   7   4   6   8   13  10  15   9   0  12   3   5   2   11   1  14
+busco el valor que hace exactamente 7 saltos, ese es el primer input que ingreso, 
+cmp edx, 7 compara que edx haga 7 saltos si no explota la bomba
+En ecx que es el segundo input, es la suma de los valores que hace en esos 7 saltos. 8 → 0 → 7 → 9 → 12 → 2 → 6 → 15 = 51 ese es el segundo input. 
+Usando un codigo de Python encuentro el valor justo donde se hacen 7 saltos, y que me devuelva la suma de esos saltos. Y le paso como parametro el array que encontre antes. 
+for x in range(15):
+    pasos = 0
+    suma  = 0
+    i     = x
+    while True:
+        pasos += 1
+        i = array[i]
+        suma += i
+        if i == 15:
+            break
+    if pasos == 7:
+        print(x, suma) --> 8 51
+Entonces ese es el input correcto para pasar la phase_4
