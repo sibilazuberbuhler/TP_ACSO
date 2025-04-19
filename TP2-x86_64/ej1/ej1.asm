@@ -64,13 +64,13 @@ string_proc_node_create_asm:
 
 string_proc_list_add_node_asm:
     ; rdi = lista (puntero a string_proc_list)
-    ; sil = tipo
+    ; rsi = type
     ; rdx = hash
 
     mov rcx, rdi ; guardo lista en rcx 
 
     ; call a string_proc_node_create_asm
-    movzx edi, sil    
+    mov     edi, esi     
     mov rsi, rdx    
     call string_proc_node_create_asm
 
@@ -102,7 +102,7 @@ string_proc_list_add_node_asm:
 
 string_proc_list_concat_asm:
     ; rdi = list
-    ; sil = type
+    ; rsi = type
     ; rdx = hash
 
     test rdi, rdi
@@ -111,7 +111,7 @@ string_proc_list_concat_asm:
     mov r13, [rdi]     
     mov r12, rdx     
     mov r15, rdx         
-    movzx r8, sil        
+    mov     r8d, esi        
 
 .loop:
     test r13, r13
