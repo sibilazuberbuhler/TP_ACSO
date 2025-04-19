@@ -36,7 +36,7 @@ char* string_proc_list_concat(string_proc_list* list, uint8_t type , char* hash)
 	while (node != NULL){
 		if (node->type == type){
 			char* bucket_hash = node->hash;
-			char* result = str_concat(acumulado, bbucket_hash);
+			char* result = str_concat(acumulado, bucket_hash);
 			if (a != hash) {
                 free(acumulado);
             }
