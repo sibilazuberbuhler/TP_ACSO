@@ -2,6 +2,8 @@
 %define NULL 0
 %define TRUE 1
 %define FALSE 0
+%define SIZE_LIST  16
+%define SIZE_NODE  32
 
 section .data
 
@@ -11,6 +13,7 @@ global string_proc_list_create_asm
 global string_proc_node_create_asm
 global string_proc_list_add_node_asm
 global string_proc_list_concat_asm
+extern string_proc_list_concat
 
 ; FUNCIONES auxiliares que pueden llegar a necesitar:
 extern malloc
@@ -19,132 +22,68 @@ extern str_concat
 
 
 string_proc_list_create_asm:
-    ; malloc(sizeof(string_proc_list)) = malloc(16)
-    mov rdi, 16      
-    call malloc       
-    test rax, rax      
-    je .error           
+    mov     edi, SIZE_LIST
+    call    malloc
+    cmp     rax, 0
+    jnz     .inicializar_lista  
+    jmp     .fin_lista           
 
-    ; rax apunta a la estructura que se creo recien
-    ; Inicializar list->first = NULL
-    mov qword [rax], 0
-    mov qword [rax + 8], 0 ; Inicializar list->last = NULL
-    ret
+.inicializar_lista:
+    mov     qword [rax+8], 0     
+    mov     qword [rax],   0     
 
-.error:
-    mov rax, 0
+.fin_lista:
     ret
 
 string_proc_node_create_asm:
-    ; rdi 
-    ; rsi = puntero a hash
+    movzx   edx, dil           
+    mov     rcx, rsi         
+    push    rcx               
+    push    rdx              
+    mov     edi, SIZE_NODE
+    call    malloc
+    pop     rdx             
+    pop     rcx                
+    test    rax, rax
+    je      .fin_nodo
 
-    test rsi, rsi     ; ver si hash == NULL
-    je .error
+    xor     r9, r9             
+    mov     [rax+8], r9         
+    mov     [rax],   r9        
+    mov     byte [rax+16], dl   
+    mov     [rax+24], rcx       
 
-    ;malloc(sizeof(string_proc_node)) = malloc(32)
-    mov rdi, 32
-    call malloc
-    test rax, rax
-    je .error
-
-    ; rax tiene el puntero al nodo
-    ; Inicializamos campos
-    mov qword [rax], 0         ; next
-    mov qword [rax + 8], 0     ; previous
-    mov qword [rax + 16], rsi  ; hash (solo apuntar)
-    mov byte [rax + 24], dil   ; type (dil = parte baja de rdi)
-
-    ; devuelvo el puntero al nodo en rax
+.fin_nodo:
     ret
 
-.error:
-    mov rax, 0
-    ret
 
 string_proc_list_add_node_asm:
-    ; rdi = lista (puntero a string_proc_list)
-    ; rsi = type
-    ; rdx = hash
+    push    rdi                
+    movzx   edi, sil            
+    mov     rsi, rdx          
+    call    string_proc_node_create_asm
+    pop     r9                  
 
-    mov rcx, rdi ; guardo lista en rcx 
+    test    rax, rax
+    je      .fin_agregar
 
-    ; call a string_proc_node_create_asm
-    mov     edi, esi     
-    mov rsi, rdx    
-    call string_proc_node_create_asm
+    mov     rcx, [r9+8]       
+    test    rcx, rcx
+    je      .lista_vacia
 
-    ; veo si devuelve NULL
-    test rax, rax
-    je .fin
-
-    mov r8, rax
-
-    ; veo si lista->first == NULL
-    cmp qword [rcx], 0
-    je .lista_vacia
-
-    ; Si no está vacia lista->last->next = nodo
-    mov rdx, [rcx + 8]       ; rdx = lista->last
-    mov [rdx], r8            ; last->next = nodo
-    mov [r8 + 8], rdx        ; nodo->previous = last
-    mov [rcx + 8], r8        ; lista->last = nodo
-    jmp .fin
+    mov     [rcx],    rax       
+    mov     [rax+8],  rcx     
+    mov     [r9+8],  rax     
+    jmp     .fin_agregar
 
 .lista_vacia:
-    ; lista->first = nodo
-    ; lista->last  = nodo
-    mov [rcx], r8
-    mov [rcx + 8], r8
+    mov     [r9+8],  rax       
+    mov     [r9],    rax      
 
-.fin:
+.fin_agregar:
     ret
 
 string_proc_list_concat_asm:
-    ; rdi = list
-    ; rsi = type
-    ; rdx = hash
-
-    test rdi, rdi
-    je .return_null
-
-    mov r13, [rdi]     
-    mov r12, rdx     
-    mov r15, rdx         
-    mov     r8d, esi        
-
-.loop:
-    test r13, r13
-    je .done
-
-    movzx r9, byte [r13 + 24]   ; r9 = node->type
-    cmp r9, r8
-    jne .next
+    jmp     string_proc_list_concat
 
 
-    mov rsi, [r13 + 16]       
-    mov rdi, r12               
-    call str_concat        
-
-
-    cmp r12, r15
-    je .skip_free
-
-    ; free(acumulado)
-    mov rdi, r12
-    call free
-
-.skip_free:
-    mov r12, rax                ; acumulado = result
-
-.next:
-    mov r13, [r13]              ; node = node->next
-    jmp .loop
-
-.done:
-    mov rax, r12
-    ret
-
-.return_null:
-    xor rax, rax
-    ret
