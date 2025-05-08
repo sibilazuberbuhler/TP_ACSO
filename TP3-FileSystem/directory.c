@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#define DIRNAMELEN 14
 
 /**
  * TODO
