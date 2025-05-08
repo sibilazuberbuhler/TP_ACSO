@@ -9,7 +9,34 @@
  * TODO
  */
 int file_getblock(struct unixfilesystem *fs, int inumber, int blockNum, void *buf) {
-    
-    return 0;
+    struct inode in;
+
+    if (inode_iget(fs, inumber, &in) == -1) { 
+        return -1;
+    }
+
+    int sector = inode_indexlookup(fs, &in, blockNum); //Busco en que sector del disco esta guardado blockNum
+    if (sector == -1) {
+        return -1;
+    }
+
+    int result = diskimg_readsector(fs->dfd, sector, buf); //Leo el sector que me devolvio inode_indexlookup
+    if (result == -1) {
+        return -1;
+    }
+
+    int filesize = inode_getsize(&in);
+    int start_byte = blockNum * DISKIMG_SECTOR_SIZE; 
+
+    if (filesize <= start_byte) {
+        return -1;
+    }
+
+    int remaining_bytes = filesize - start_byte;
+    if (remaining_bytes < DISKIMG_SECTOR_SIZE) {
+        return remaining_bytes;
+    } else {
+        return DISKIMG_SECTOR_SIZE;
+    }
 }
 
