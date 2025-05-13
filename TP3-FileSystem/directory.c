@@ -18,7 +18,7 @@ int directory_findname(struct unixfilesystem *fs, const char *name,
         return -1;  
     }
 
-    int filesize = inode_getsize(&in); //tamaño del archivo en bytes 
+    int filesize = inode_getsize(&in);
     int offset = 0;
     char block[DISKIMG_SECTOR_SIZE];
 
@@ -28,7 +28,7 @@ int directory_findname(struct unixfilesystem *fs, const char *name,
             return -1;  
         }
 
-        int cantidad = bytes / sizeof(struct direntv6);  // veo cuantas entradas hay en el bloque. bytes / 16 
+        int cantidad = bytes / sizeof(struct direntv6);
         struct direntv6 *entradas = (struct direntv6 *) block; 
 
         for (int i = 0; i < cantidad; i++) {
@@ -38,7 +38,7 @@ int directory_findname(struct unixfilesystem *fs, const char *name,
             }
         }
 
-        offset += bytes; //voy al bloque que sigue
+        offset += bytes; 
     }
 
     return -1;  
