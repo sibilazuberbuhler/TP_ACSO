@@ -25,6 +25,21 @@ int main() {
            characters not in the string specified in the second argument ("\n" in this case). */
         command[strcspn(command, "\n")] = '\0';
 
+        if (strcmp(command, "exit") == 0)
+            break;
+
+        if (strstr(command, "||") != NULL) {
+            printf("Error: doble pipe\n");
+            continue;
+        }
+        if (command[0] == '|') {
+            printf("Error: pipe al inicio\n");
+            continue;
+        }
+        if (strstr(command, "| |") != NULL) {
+            printf("Error: pipe vacío entre comandos\n");
+            continue;
+        }
         /* Tokenizes the command string using the pipe character (|) as a delimiter using the strtok() function. 
            Each resulting token is stored in the commands[] array. 
            The strtok() function breaks the command string into tokens (substrings) separated by the pipe character |. 
@@ -41,7 +56,75 @@ int main() {
         for (int i = 0; i < command_count; i++) 
         {
             printf("Command %d: %s\n", i, commands[i]);
-        }    
+        }  
+        if (command_count == 0) {
+            printf("No ingreso nigun comando\n");
+            continue;
+        }
+
+        if (command_count > 0) {
+            int fd[2], prev_fd = -1;
+            pid_t pids[MAX_COMMANDS];
+
+            for (int i = 0; i < command_count; i++) {
+                if (i < command_count - 1 && pipe(fd) == -1) {
+                    printf("Error al crear pipe\n");
+                    exit(1);
+                }
+
+                pid_t pid = fork();
+                if (pid == 0) {
+                    if (i > 0) {
+                        dup2(prev_fd, STDIN_FILENO);
+                        close(prev_fd);
+                    }
+
+                    if (i < command_count - 1) {
+                        close(fd[0]);
+                        dup2(fd[1], STDOUT_FILENO);
+                        close(fd[1]);
+                    }
+
+                    char *args[64];
+                    int j = 0;
+                    char *arg = strtok(commands[i], " ");
+                    while (arg != NULL) {
+                        if (j >= 63) {
+                            printf("Demasiados argumentos para el comando\n");
+                            exit(1);
+                        }
+                        args[j++] = arg;
+                        arg = strtok(NULL, " ");
+                    }
+                    args[j] = NULL;
+
+                    execvp(args[0], args);
+                    printf("No se encontro el comando\n");
+                    exit(1);
+                } 
+                else if (pid < 0) {
+                    printf("Error al hacer fork\n");
+                    exit(1);
+                }
+
+                pids[i] = pid;
+                if (prev_fd != -1)
+                    close(prev_fd);
+                if (i < command_count - 1) {
+                    close(fd[1]);
+                    prev_fd = fd[0];
+                }
+            }
+
+            for (int i = 0; i < command_count; i++) {
+                int status;
+                waitpid(pids[i], &status, 0);
+            }
+
+            command_count = 0;
+        }
+
     }
     return 0;
 }
+
