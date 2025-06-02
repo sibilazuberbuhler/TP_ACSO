@@ -5,10 +5,7 @@
 #include <sys/wait.h>
 
 int main(int argc, char **argv) {
-    if (argc != 4) {
-        fprintf(stderr, "Uso: %s <n> <c> <s>\n", argv[0]);
-        exit(EXIT_FAILURE);
-    }
+    if (argc != 4){ printf("Uso: anillo <n> <c> <s> \n"); exit(0);}
 
     int n = atoi(argv[1]), c = atoi(argv[2]), s = atoi(argv[3]);
 
