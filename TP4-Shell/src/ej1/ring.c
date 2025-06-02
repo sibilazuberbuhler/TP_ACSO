@@ -10,7 +10,7 @@ int main(int argc, char **argv) {
     int n = atoi(argv[1]), c = atoi(argv[2]), s = atoi(argv[3]);
 
     if (n < 3 || s < 0 || s >= n || c < 0) {
-		printf("Argumentos inválidos.\n");
+	printf("Argumentos inválidos.\n");
         exit(EXIT_FAILURE);
     }
 
