@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
 
     if (n < 3 || s < 0 || s >= n || c < 0) {
 	printf("Argumentos inválidos.\n");
-        exit(EXIT_FAILURE);
+        exit(0);
     }
 
     int pipes[n][2];
