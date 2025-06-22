@@ -37,6 +37,9 @@ int main() {
         }
     }
 
+    pool.schedule([]{});
+    pool.schedule([]{});
+
     // Wait for all threads to finish
     pool.wait();
 
