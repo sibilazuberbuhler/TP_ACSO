@@ -64,7 +64,7 @@ void ThreadPool::dispatcher() {
             }
         }
 
-
+        //le paso la tarea al worker 
         wts[freeWorker].available = false;
         wts[freeWorker].thunk     = nextTask;
         wts[freeWorker].ready.signal();  
@@ -92,6 +92,7 @@ void ThreadPool::worker(int id) {
             }
         }
 
+        //aviso si no quedan tareas
         if (wasLast) {
             allTasksDone.notify_all();
         }
@@ -118,7 +119,7 @@ ThreadPool::~ThreadPool() {
         wts[i].ready.signal();
     }
 
-    
+    // espero a que todos los hilos terminen antes de destruir el pool
     if (dt.joinable()) dt.join();
     for (size_t i = 0; i < wts.size(); ++i) {
         if (wts[i].ts.joinable()) {
@@ -126,3 +127,4 @@ ThreadPool::~ThreadPool() {
         }
     }
 }
+
